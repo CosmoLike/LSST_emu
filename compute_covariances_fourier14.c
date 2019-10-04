@@ -22,6 +22,8 @@
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_sf_expint.h>
 #include <gsl/gsl_deriv.h>
+#include <gsl/gsl_interp2d.h>
+#include <gsl/gsl_spline2d.h>
 
 #include "../cosmolike_core/theory/basics.c"
 #include "../cosmolike_core/theory/structs.c"
@@ -32,6 +34,7 @@
 #include "../cosmolike_core/theory/redshift_spline.c"
 #include "../cosmolike_core/theory/halo.c"
 #include "../cosmolike_core/theory/HOD.c"
+#include "../cosmolike_core/theory/pt.c"
 #include "../cosmolike_core/theory/cosmo2D_fourier.c"
 #include "../cosmolike_core/theory/IA.c"
 #include "../cosmolike_core/theory/cluster.c"
@@ -40,7 +43,7 @@
 #include "../cosmolike_core/theory/covariances_3D.c"
 #include "../cosmolike_core/theory/covariances_fourier.c"
 #include "../cosmolike_core/theory/covariances_cluster.c"
-#include "init_SRD.c"
+#include "init_emu.c"
 
 void run_cov_N_N (char *OUTFILE, char *PATH, int nzc1, int nzc2,int start);
 void run_cov_cgl_N (char *OUTFILE, char *PATH, double *ell_Cluster, double *dell_Cluster,int N1, int nzc2, int start);
@@ -538,16 +541,18 @@ int main(int argc, char** argv)
   int i,l,m,n,o,s,p,nl1,t,k;
   char OUTFILE[400],filename[400],arg1[400],arg2[400];
   
-  int N_scenarios=25;
-  double area_table[25]={16679.6,19051,17427.2,17714.8,10522.7,9233.53,15341,12875.7,9585.8,18238,10308.5,19857.6,16015.3,13355.6,8917.83,14275.5,15569.8,7756.47,13759.2,12208.4,18798.4,11243.6,11947.8,14979.8,8426.2};
-  double nsource_table[25]={7.79,11.7121,17.3408,22.2541,13.1107,27.06,35.6236,21.6356,28.9563,9.26213,10.754,20.5087,9.83959,14.7278,30.9723,11.3039,18.6795,17.0839,12.7495,33.2061,28.1279,24.0598,34.9802,25.1854,15.568};
-  double nlens_table[25]={7.23589,18.8519,29.141,38.6076,21.4149,48.687,69.1457,37.3737,52.9255,14.029,17.0481,35.1595,15.2452,24.3492,57.6073,18.0906,31.6502,28.6643,20.7572,63.0165,51.0546,42.289,67.4858,44.6468,25.8786};
+  int N_scenarios=36;
+  double area_table[36]={7623.22,14786.3,9931.47,8585.43,17681.8,15126.9,9747.99,8335.08,9533.42,18331.3,12867.8,17418.9,19783.1,12538.8,15260.0,16540.7,19636.8,11112.7,10385.5,16140.2,18920.1,17976.2,11352.0,9214.77,16910.7,11995.6,16199.8,14395.1,8133.86,13510.5,19122.3,15684.5,12014.8,14059.7,10919.3,13212.7};
+  double nsource_table[36]={13.991,33.3975,17.069,28.4875,35.3643,10.3802,11.1105,29.5904,31.4608,15.7463,13.3066,9.07218,9.58719,16.3234,25.8327,10.7415,38.0412,32.8821,19.8893,27.0369,15.1711,14.2418,19.1851,26.926,22.0012,12.6553,18.6304,11.9787,36.8728,22.5265,17.4381,12.3424,10.0095,23.5979,20.8771,24.8956};
   
-  char survey_designation[25][200]={"LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10","LSST_Y10"};
-  char source_zfile[25][400]={"wl_redshift_model0_WLz02.055000e-01_WLalpha9.450000e-01.txt","wl_redshift_model1_WLz01.910201e-01_WLalpha8.650710e-01.txt","wl_redshift_model2_WLz01.844341e-01_WLalpha8.287162e-01.txt","wl_redshift_model3_WLz01.801803e-01_WLalpha8.052354e-01.txt","wl_redshift_model4_WLz01.890925e-01_WLalpha8.544304e-01.txt","wl_redshift_model5_WLz01.766726e-01_WLalpha7.858730e-01.txt","wl_redshift_model6_WLz01.713679e-01_WLalpha7.565910e-01.txt","wl_redshift_model7_WLz01.806715e-01_WLalpha8.079466e-01.txt","wl_redshift_model8_WLz01.754104e-01_WLalpha7.789054e-01.txt","wl_redshift_model9_WLz01.954884e-01_WLalpha8.897358e-01.txt","wl_redshift_model10_WLz01.925409e-01_WLalpha8.734658e-01.txt","wl_redshift_model11_WLz01.815950e-01_WLalpha8.130446e-01.txt","wl_redshift_model12_WLz01.942312e-01_WLalpha8.827961e-01.txt","wl_redshift_model13_WLz01.871507e-01_WLalpha8.437116e-01.txt","wl_redshift_model14_WLz01.741286e-01_WLalpha7.718300e-01.txt","wl_redshift_model15_WLz01.916434e-01_WLalpha8.685118e-01.txt","wl_redshift_model16_WLz01.831851e-01_WLalpha8.218217e-01.txt","wl_redshift_model17_WLz01.846835e-01_WLalpha8.300930e-01.txt","wl_redshift_model18_WLz01.895642e-01_WLalpha8.570342e-01.txt","wl_redshift_model19_WLz01.727715e-01_WLalpha7.643386e-01.txt","wl_redshift_model20_WLz01.759546e-01_WLalpha7.819096e-01.txt","wl_redshift_model21_WLz01.788031e-01_WLalpha7.976330e-01.txt","wl_redshift_model22_WLz01.717354e-01_WLalpha7.586192e-01.txt","wl_redshift_model23_WLz01.779827e-01_WLalpha7.931042e-01.txt","wl_redshift_model24_WLz01.862295e-01_WLalpha8.386269e-01.txt"};
-  char lens_zfile[25][400]={"LSS_redshift_model0_LSSz02.594800e-01_LSSalpha1.009000e+00.txt","LSS_redshift_model1_LSSz02.606188e-01_LSSalpha9.388940e-01.txt","LSS_redshift_model2_LSSz02.667042e-01_LSSalpha9.181063e-01.txt","LSS_redshift_model3_LSSz02.724849e-01_LSSalpha9.083688e-01.txt","LSS_redshift_model4_LSSz02.620396e-01_LSSalpha9.320914e-01.txt","LSS_redshift_model5_LSSz02.783442e-01_LSSalpha9.025172e-01.txt","LSS_redshift_model6_LSSz02.890811e-01_LSSalpha8.974074e-01.txt","LSS_redshift_model7_LSSz02.717433e-01_LSSalpha9.093453e-01.txt","LSS_redshift_model8_LSSz02.806942e-01_LSSalpha9.008931e-01.txt","LSS_redshift_model9_LSSz02.584723e-01_LSSalpha9.569488e-01.txt","LSS_redshift_model10_LSSz02.597084e-01_LSSalpha9.446805e-01.txt","LSS_redshift_model11_LSSz02.704012e-01_LSSalpha9.112860e-01.txt","LSS_redshift_model12_LSSz02.589143e-01_LSSalpha9.515460e-01.txt","LSS_redshift_model13_LSSz02.637723e-01_LSSalpha9.258398e-01.txt","LSS_redshift_model14_LSSz02.832115e-01_LSSalpha8.995048e-01.txt","LSS_redshift_model15_LSSz02.602232e-01_LSSalpha9.412210e-01.txt","LSS_redshift_model16_LSSz02.682509e-01_LSSalpha9.149470e-01.txt","LSS_redshift_model17_LSSz02.664103e-01_LSSalpha9.187672e-01.txt","LSS_redshift_model18_LSSz02.616644e-01_LSSalpha9.337011e-01.txt","LSS_redshift_model19_LSSz02.860205e-01_LSSalpha8.983214e-01.txt","LSS_redshift_model20_LSSz02.796653e-01_LSSalpha9.015621e-01.txt","LSS_redshift_model21_LSSz02.746677e-01_LSSalpha9.058365e-01.txt","LSS_redshift_model22_LSSz02.882646e-01_LSSalpha8.976162e-01.txt","LSS_redshift_model23_LSSz02.760404e-01_LSSalpha9.044723e-01.txt","LSS_redshift_model24_LSSz02.647001e-01_LSSalpha9.230852e-01.txt"};
+  double nlens_table[36]={22.9726 ,61.5948 ,28.7809 ,51.4354 ,65.7226 ,16.3777 ,17.6899 ,53.6984 ,57.562 ,26.266 ,21.703 ,14.0587 ,14.9667 ,27.36 ,46.0364 ,17.0253 ,71.39 ,60.5184 ,34.2283 ,48.4767 ,25.1812 ,23.44 ,32.8578 ,48.2513 ,38.3766 ,20.5029 ,31.783 ,19.2647 ,68.9094 ,39.4168 ,29.4874 ,19.9292 ,15.7162 ,41.5487 ,36.1616 ,44.148};
+  char survey_designation[1][200]={"LSST_Y10"};
   
-  int Ntomo_lens[25]={10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
+  char source_zfile[36][400]={"wl_redshift_model0_WLz01.880307e-01_WLalpha8.485694e-01.txt", "wl_redshift_model1_WLz01.731166e-01_WLalpha7.662434e-01.txt", "wl_redshift_model2_WLz01.846221e-01_WLalpha8.297540e-01.txt", "wl_redshift_model3_WLz01.758423e-01_WLalpha7.812893e-01.txt", "wl_redshift_model4_WLz01.721357e-01_WLalpha7.608290e-01.txt", "wl_redshift_model5_WLz01.931476e-01_WLalpha8.768147e-01.txt", "wl_redshift_model6_WLz01.919821e-01_WLalpha8.703814e-01.txt", "wl_redshift_model7_WLz01.751912e-01_WLalpha7.776952e-01.txt", "wl_redshift_model8_WLz01.741405e-01_WLalpha7.718958e-01.txt", "wl_redshift_model9_WLz01.860048e-01_WLalpha8.373865e-01.txt", "wl_redshift_model10_WLz01.888904e-01_WLalpha8.533151e-01.txt", "wl_redshift_model11_WLz01.954564e-01_WLalpha8.895592e-01.txt", "wl_redshift_model12_WLz01.945099e-01_WLalpha8.843347e-01.txt", "wl_redshift_model13_WLz01.853877e-01_WLalpha8.339802e-01.txt", "wl_redshift_model14_WLz01.775192e-01_WLalpha7.905458e-01.txt", "wl_redshift_model15_WLz01.925611e-01_WLalpha8.735775e-01.txt", "wl_redshift_model16_WLz01.708849e-01_WLalpha7.539247e-01.txt", "wl_redshift_model17_WLz01.733832e-01_WLalpha7.677150e-01.txt", "wl_redshift_model18_WLz01.820009e-01_WLalpha8.152851e-01.txt", "wl_redshift_model19_WLz01.767381e-01_WLalpha7.862345e-01.txt", "wl_redshift_model20_WLz01.866426e-01_WLalpha8.409073e-01.txt", "wl_redshift_model21_WLz01.877261e-01_WLalpha8.468882e-01.txt", "wl_redshift_model22_WLz01.826188e-01_WLalpha8.186960e-01.txt", "wl_redshift_model23_WLz01.768086e-01_WLalpha7.866234e-01.txt", "wl_redshift_model24_WLz01.802711e-01_WLalpha8.057362e-01.txt", "wl_redshift_model25_WLz01.897506e-01_WLalpha8.580632e-01.txt", "wl_redshift_model26_WLz01.831217e-01_WLalpha8.214720e-01.txt", "wl_redshift_model27_WLz01.906926e-01_WLalpha8.632630e-01.txt", "wl_redshift_model28_WLz01.714197e-01_WLalpha7.568766e-01.txt", "wl_redshift_model29_WLz01.798667e-01_WLalpha8.035040e-01.txt", "wl_redshift_model30_WLz01.842554e-01_WLalpha8.277299e-01.txt", "wl_redshift_model31_WLz01.901797e-01_WLalpha8.604322e-01.txt", "wl_redshift_model32_WLz01.937710e-01_WLalpha8.802561e-01.txt", "wl_redshift_model33_WLz01.790701e-01_WLalpha7.991072e-01.txt", "wl_redshift_model34_WLz01.811701e-01_WLalpha8.106987e-01.txt", "wl_redshift_model35_WLz01.781525e-01_WLalpha7.940419e-01.txt"};
+
+  char lens_zfile[36][400]={"LSS_redshift_model0_LSSz02.629496e-01_LSSalpha9.285983e-01.txt","LSS_redshift_model1_LSSz02.852923e-01_LSSalpha8.985943e-01.txt","LSS_redshift_model2_LSSz02.664822e-01_LSSalpha9.186036e-01.txt","LSS_redshift_model3_LSSz02.798758e-01_LSSalpha9.014201e-01.txt","LSS_redshift_model4_LSSz02.873873e-01_LSSalpha8.978683e-01.txt","LSS_redshift_model5_LSSz02.593970e-01_LSSalpha9.470921e-01.txt","LSS_redshift_model6_LSSz02.600213e-01_LSSalpha9.425114e-01.txt","LSS_redshift_model7_LSSz02.811155e-01_LSSalpha9.006370e-01.txt","LSS_redshift_model8_LSSz02.831875e-01_LSSalpha8.995165e-01.txt","LSS_redshift_model9_LSSz02.649368e-01_LSSalpha9.224338e-01.txt","LSS_redshift_model10_LSSz02.622058e-01_LSSalpha9.314128e-01.txt","LSS_redshift_model11_LSSz02.584820e-01_LSSalpha9.568082e-01.txt","LSS_redshift_model12_LSSz02.588053e-01_LSSalpha9.527220e-01.txt","LSS_redshift_model13_LSSz02.656075e-01_LSSalpha9.206866e-01.txt","LSS_redshift_model14_LSSz02.768397e-01_LSSalpha9.037492e-01.txt","LSS_redshift_model15_LSSz02.596975e-01_LSSalpha9.447600e-01.txt","LSS_redshift_model16_LSSz02.901709e-01_LSSalpha8.971658e-01.txt","LSS_redshift_model17_LSSz02.847362e-01_LSSalpha8.988183e-01.txt","LSS_redshift_model18_LSSz02.698330e-01_LSSalpha9.121821e-01.txt","LSS_redshift_model19_LSSz02.782257e-01_LSSalpha9.026084e-01.txt","LSS_redshift_model20_LSSz02.642756e-01_LSSalpha9.243038e-01.txt","LSS_redshift_model21_LSSz02.632273e-01_LSSalpha9.276296e-01.txt","LSS_redshift_model22_LSSz02.689934e-01_LSSalpha9.135968e-01.txt","LSS_redshift_model23_LSSz02.780987e-01_LSSalpha9.027073e-01.txt","LSS_redshift_model24_LSSz02.723464e-01_LSSalpha9.085463e-01.txt","LSS_redshift_model25_LSSz02.615210e-01_LSSalpha9.343470e-01.txt","LSS_redshift_model26_LSSz02.683327e-01_LSSalpha9.147934e-01.txt","LSS_redshift_model27_LSSz02.608392e-01_LSSalpha9.376962e-01.txt","LSS_redshift_model28_LSSz02.889655e-01_LSSalpha8.974355e-01.txt","LSS_redshift_model29_LSSz02.729686e-01_LSSalpha9.077654e-01.txt","LSS_redshift_model30_LSSz02.669178e-01_LSSalpha9.176391e-01.txt","LSS_redshift_model31_LSSz02.612016e-01_LSSalpha9.358553e-01.txt","LSS_redshift_model32_LSSz02.591077e-01_LSSalpha9.496317e-01.txt","LSS_redshift_model33_LSSz02.742326e-01_LSSalpha9.063038e-01.txt","LSS_redshift_model34_LSSz02.710103e-01_LSSalpha9.103760e-01.txt","LSS_redshift_model35_LSSz02.757517e-01_LSSalpha9.047459e-01.txt"};
+
+
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // use this remapping only if files fail !!!!!!!!! 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -563,8 +568,7 @@ int main(int argc, char** argv)
    
     //RUN MODE setup
     init_cosmo_runmode("emu");
-    init_binning_fourier(20,20.0,15000.0,3000.0,21.0,10,Ntomo_lens[t]);
-    init_priors("pessi","none","none","none");
+    init_binning_fourier(15,20.0,3000.0,3000.0,21.0,10,10);
     init_survey("LSST");
     sprintf(arg1,"zdistris/%s",source_zfile[t]);
     sprintf(arg2,"zdistris/%s",lens_zfile[t]); 
@@ -598,14 +602,13 @@ int main(int argc, char** argv)
     printf("----------------------------------\n");  
     survey.area=area_table[t];
     survey.n_gal=nsource_table[t];
-    survey.n_lens=nlens_table[t];    
+    survey.n_lens=nlens_table[t]; 
     
-    sprintf(survey.name,"%s_area%le_ng%le_nl%le",survey_designation[t],survey.area,survey.n_gal,survey.n_lens);
+    sprintf(survey.name,"%s_area%le_ng%le_nl%le",survey_designation[0],survey.area,survey.n_gal,survey.n_lens);
     printf("area: %le n_source: %le n_lens: %le\n",survey.area,survey.n_gal,survey.n_lens);
 
 //    sprintf(covparams.outdir,"/home/u17/timeifler/covparallel/"); 
-//    sprintf(covparams.outdir,"/aurora_nobackup/cosmos/teifler/covparallel/");
-    sprintf(covparams.outdir,"/halo_nobackup/cosmos/teifler/covparallel/");
+    sprintf(covparams.outdir,"/aurora_nobackup/cosmos/teifler/covparallel/");
 
     printf("----------------------------------\n");  
     sprintf(OUTFILE,"%s_ssss_cov_Ncl%d_Ntomo%d",survey.name,like.Ncl,tomo.shear_Nbin);

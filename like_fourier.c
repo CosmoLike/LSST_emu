@@ -22,6 +22,8 @@
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_sf_expint.h>
 #include <gsl/gsl_deriv.h>
+#include <gsl/gsl_interp2d.h>
+#include <gsl/gsl_spline2d.h>
 
 
 #include "../cosmolike_core/theory/basics.c"
@@ -33,12 +35,13 @@
 #include "../cosmolike_core/theory/redshift_spline.c"
 #include "../cosmolike_core/theory/halo.c"
 #include "../cosmolike_core/theory/HOD.c"
+#include "../cosmolike_core/theory/pt.c"
 #include "../cosmolike_core/theory/cosmo2D_fourier.c"
 #include "../cosmolike_core/theory/IA.c"
 #include "../cosmolike_core/theory/cluster.c"
 #include "../cosmolike_core/theory/BAO.c"
 #include "../cosmolike_core/theory/external_prior.c"
-#include "init_SRD.c"
+#include "init_emu.c"
 
 double C_shear_tomo_sys(double ell,int z1,int z2);
 double C_cgl_tomo_sys(double ell_Cluster,int zl,int nN, int zs);
@@ -583,21 +586,40 @@ void save_zdistr_lenses(int zl){
 }
 
 
- int main(void)
+ int main(int argc, char** argv)
 {
   clock_t begin, end;
   double time_spent;
   int i;
+  char arg1[400],arg2[400],arg3[400];
 /* here, do your time-consuming job */
+  int sce=atoi(argv[1]);
+
+  int N_scenarios=36;
+  
+  double area_table[36]={7623.22,14786.3,9931.47,8585.43,17681.8,15126.9,9747.99,8335.08,9533.42,18331.3,12867.8,17418.9,19783.1,12538.8,15260.0,16540.7,19636.8,11112.7,10385.5,16140.2,18920.1,17976.2,11352.0,9214.77,16910.7,11995.6,16199.8,14395.1,8133.86,13510.5,19122.3,15684.5,12014.8,14059.7,10919.3,13212.7};
+  
+  double sigma_z[36]={0.0849973 ,0.0986032 ,0.0875521 ,0.0968222 ,0.0225239 ,0.0718278 ,0.0733675 ,0.0385274 ,0.0425549 ,0.0605867 ,0.0178555 ,0.0853407 ,0.0124119 ,0.0531027 ,0.0304032 ,0.0503145 ,0.0132213 ,0.0941765 ,0.0416444 ,0.0668198 ,0.063227 ,0.0291332 ,0.0481633 ,0.0595606 ,0.0818742 ,0.0472518 ,0.0270185 ,0.0767401 ,0.0219945 ,0.0902663 ,0.0779705 ,0.0337666 ,0.0362358 ,0.0692429 ,0.0558841 ,0.0150457};
+
+char survey_designation[1][200]={"LSST_Y10"}; 
+
+char source_zfile[36][400]={"wl_redshift_model0_WLz01.880307e-01_WLalpha8.485694e-01.txt", "wl_redshift_model1_WLz01.731166e-01_WLalpha7.662434e-01.txt", "wl_redshift_model2_WLz01.846221e-01_WLalpha8.297540e-01.txt", "wl_redshift_model3_WLz01.758423e-01_WLalpha7.812893e-01.txt", "wl_redshift_model4_WLz01.721357e-01_WLalpha7.608290e-01.txt", "wl_redshift_model5_WLz01.931476e-01_WLalpha8.768147e-01.txt", "wl_redshift_model6_WLz01.919821e-01_WLalpha8.703814e-01.txt", "wl_redshift_model7_WLz01.751912e-01_WLalpha7.776952e-01.txt", "wl_redshift_model8_WLz01.741405e-01_WLalpha7.718958e-01.txt", "wl_redshift_model9_WLz01.860048e-01_WLalpha8.373865e-01.txt", "wl_redshift_model10_WLz01.888904e-01_WLalpha8.533151e-01.txt", "wl_redshift_model11_WLz01.954564e-01_WLalpha8.895592e-01.txt", "wl_redshift_model12_WLz01.945099e-01_WLalpha8.843347e-01.txt", "wl_redshift_model13_WLz01.853877e-01_WLalpha8.339802e-01.txt", "wl_redshift_model14_WLz01.775192e-01_WLalpha7.905458e-01.txt", "wl_redshift_model15_WLz01.925611e-01_WLalpha8.735775e-01.txt", "wl_redshift_model16_WLz01.708849e-01_WLalpha7.539247e-01.txt", "wl_redshift_model17_WLz01.733832e-01_WLalpha7.677150e-01.txt", "wl_redshift_model18_WLz01.820009e-01_WLalpha8.152851e-01.txt", "wl_redshift_model19_WLz01.767381e-01_WLalpha7.862345e-01.txt", "wl_redshift_model20_WLz01.866426e-01_WLalpha8.409073e-01.txt", "wl_redshift_model21_WLz01.877261e-01_WLalpha8.468882e-01.txt", "wl_redshift_model22_WLz01.826188e-01_WLalpha8.186960e-01.txt", "wl_redshift_model23_WLz01.768086e-01_WLalpha7.866234e-01.txt", "wl_redshift_model24_WLz01.802711e-01_WLalpha8.057362e-01.txt", "wl_redshift_model25_WLz01.897506e-01_WLalpha8.580632e-01.txt", "wl_redshift_model26_WLz01.831217e-01_WLalpha8.214720e-01.txt", "wl_redshift_model27_WLz01.906926e-01_WLalpha8.632630e-01.txt", "wl_redshift_model28_WLz01.714197e-01_WLalpha7.568766e-01.txt", "wl_redshift_model29_WLz01.798667e-01_WLalpha8.035040e-01.txt", "wl_redshift_model30_WLz01.842554e-01_WLalpha8.277299e-01.txt", "wl_redshift_model31_WLz01.901797e-01_WLalpha8.604322e-01.txt", "wl_redshift_model32_WLz01.937710e-01_WLalpha8.802561e-01.txt", "wl_redshift_model33_WLz01.790701e-01_WLalpha7.991072e-01.txt", "wl_redshift_model34_WLz01.811701e-01_WLalpha8.106987e-01.txt", "wl_redshift_model35_WLz01.781525e-01_WLalpha7.940419e-01.txt"};
+
+char lens_zfile[36][400]={"LSS_redshift_model0_LSSz02.629496e-01_LSSalpha9.285983e-01.txt","LSS_redshift_model1_LSSz02.852923e-01_LSSalpha8.985943e-01.txt","LSS_redshift_model2_LSSz02.664822e-01_LSSalpha9.186036e-01.txt","LSS_redshift_model3_LSSz02.798758e-01_LSSalpha9.014201e-01.txt","LSS_redshift_model4_LSSz02.873873e-01_LSSalpha8.978683e-01.txt","LSS_redshift_model5_LSSz02.593970e-01_LSSalpha9.470921e-01.txt","LSS_redshift_model6_LSSz02.600213e-01_LSSalpha9.425114e-01.txt","LSS_redshift_model7_LSSz02.811155e-01_LSSalpha9.006370e-01.txt","LSS_redshift_model8_LSSz02.831875e-01_LSSalpha8.995165e-01.txt","LSS_redshift_model9_LSSz02.649368e-01_LSSalpha9.224338e-01.txt","LSS_redshift_model10_LSSz02.622058e-01_LSSalpha9.314128e-01.txt","LSS_redshift_model11_LSSz02.584820e-01_LSSalpha9.568082e-01.txt","LSS_redshift_model12_LSSz02.588053e-01_LSSalpha9.527220e-01.txt","LSS_redshift_model13_LSSz02.656075e-01_LSSalpha9.206866e-01.txt","LSS_redshift_model14_LSSz02.768397e-01_LSSalpha9.037492e-01.txt","LSS_redshift_model15_LSSz02.596975e-01_LSSalpha9.447600e-01.txt","LSS_redshift_model16_LSSz02.901709e-01_LSSalpha8.971658e-01.txt","LSS_redshift_model17_LSSz02.847362e-01_LSSalpha8.988183e-01.txt","LSS_redshift_model18_LSSz02.698330e-01_LSSalpha9.121821e-01.txt","LSS_redshift_model19_LSSz02.782257e-01_LSSalpha9.026084e-01.txt","LSS_redshift_model20_LSSz02.642756e-01_LSSalpha9.243038e-01.txt","LSS_redshift_model21_LSSz02.632273e-01_LSSalpha9.276296e-01.txt","LSS_redshift_model22_LSSz02.689934e-01_LSSalpha9.135968e-01.txt","LSS_redshift_model23_LSSz02.780987e-01_LSSalpha9.027073e-01.txt","LSS_redshift_model24_LSSz02.723464e-01_LSSalpha9.085463e-01.txt","LSS_redshift_model25_LSSz02.615210e-01_LSSalpha9.343470e-01.txt","LSS_redshift_model26_LSSz02.683327e-01_LSSalpha9.147934e-01.txt","LSS_redshift_model27_LSSz02.608392e-01_LSSalpha9.376962e-01.txt","LSS_redshift_model28_LSSz02.889655e-01_LSSalpha8.974355e-01.txt","LSS_redshift_model29_LSSz02.729686e-01_LSSalpha9.077654e-01.txt","LSS_redshift_model30_LSSz02.669178e-01_LSSalpha9.176391e-01.txt","LSS_redshift_model31_LSSz02.612016e-01_LSSalpha9.358553e-01.txt","LSS_redshift_model32_LSSz02.591077e-01_LSSalpha9.496317e-01.txt","LSS_redshift_model33_LSSz02.742326e-01_LSSalpha9.063038e-01.txt","LSS_redshift_model34_LSSz02.710103e-01_LSSalpha9.103760e-01.txt","LSS_redshift_model35_LSSz02.757517e-01_LSSalpha9.047459e-01.txt"};
+
 
   init_cosmo_runmode("halofit");
-  init_binning_fourier(20,20.0,15000.0,3000.0,21.0,10,10);
-  init_priors("opti","none","none","none");
+  init_binning_fourier(15,20.0,3000.0,3000.0,21.0,10,10);
+  init_priors("LSST_Y10","none","none","none");
   init_survey("LSST");
-  init_galaxies("zdistris/SRD_zdistri_model_z0=1.100000e-01_beta=6.800000e-01_Y10_source.txt","zdistris/SRD_zdistri_model_z0=2.800000e-01_beta=9.000000e-01_Y10_lens.txt","gaussian","gaussian","LSST_Y10");
+  sprintf(arg1,"zdistris/%s",source_zfile[sce]);
+  sprintf(arg2,"zdistris/%s",lens_zfile[sce]); 
+  init_galaxies(arg1,arg2,"gaussian","gaussian","LSST_Y10");
   init_clusters();
   init_IA("none", "none"); 
   init_probes("3x2pt");
+
+
 
   //init_Pdelta("emu",0.8,0.35);
   // init_Pdelta("linear",0.8,0.35);
@@ -615,7 +637,10 @@ void save_zdistr_lenses(int zl){
 //   sprintf(filename,"test_fid_%d", i);
 //compute_data_vector(filename,Omega,0.831,0.9645,-1.,0.,0.0491685,0.6727,0.,0.,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.1,2.2,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.05,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.05,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,5.92,1.1,-0.47,0.0,0.0,0.0,0.0,0.0,0.0,0.0,3.207,0.993,0.0,0.456,0.0,0.0);
 // }
-compute_data_vector("fid_opti",0.3156,0.831,0.9645,-1.,0.,0.0491685,0.6727,0.,0.,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.1,2.2,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.02,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.02,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,5.92,1.1,-0.47,0.0,0.0,0.0,0.0,0.0,0.0,0.0,3.207,0.993,0.0,0.456,0.0,0.0);
+
+sprintf(arg3,"Y10_area%le",area_table[sce]);
+  
+compute_data_vector(arg3,0.3156,0.831,0.9645,-1.,0.,0.0491685,0.6727,0.,0.,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.1,2.2,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,sigma_z[sce],0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,sigma_z[sce],0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,5.92,1.1,-0.47,0.0,0.0,0.0,0.0,0.0,0.0,0.0,3.207,0.993,0.0,0.456,0.0,0.0);
 
 // compute_data_vector("mu1_Sigma0",0.3156,0.831,0.9645,-1.,0.,0.0491685,0.6727,0.,1.,1.35,1.5,1.65,1.8,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.05,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,5.92,1.1,-0.47,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.72+log(1.e+14*0.7),1.08,0.0,0.25,0.9,0.9,0.9,0.9);
   // compute_data_vector("mu1_Sigma1",0.3156,0.831,0.9645,-1.,0.,0.0491685,0.6727,1.,1.,1.35,1.5,1.65,1.8,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.05,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,5.92,1.1,-0.47,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.72+log(1.e+14*0.7),1.08,0.0,0.25,0.9,0.9,0.9,0.9);

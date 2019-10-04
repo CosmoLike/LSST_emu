@@ -7,7 +7,7 @@ from numpy import linalg as LA
 import numpy as np
 
 
-infile =['/users/timeifler/Dropbox/cosmolike_store/LSSTC_emu/cov/cov_LSST_SRD_10sheartomo']
+infile =['/users/timeifler/Dropbox/cosmolike_store/LSSTC_emu/cov/']
 
 #infile =['/users/timeifler/Dropbox/cosmolike_store/WFIRST_forecasts/cov/cov_WFIRST_Ncl25_4clusterbins_nrichmin25_source_Dec17']
 data= ['datav/LSST_3x2pt_clusterN_clusterWL_fid']
