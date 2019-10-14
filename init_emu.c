@@ -1,7 +1,8 @@
 double invcov_read(int READ, int ci, int cj);
 double data_read(int READ, int ci);
-void init_data_inv(char *INV_FILE, char *DATA_FILE);
-void init_priors(char *cosmoPrior1, char *cosmoPrior2, char *cosmoPrior3, char *cosmoPrior4);
+double bary_read(int READ, int PC, int cj);
+void init_data_inv_bary(char *INV_FILE, char *DATA_FILE, char *BARY_FILE);
+void init_priors(double Prior1, double Prior2, double Prior3, double Prior4);
 void init_survey(char *surveyname);
 void init_galaxies(char *SOURCE_ZFILE, char *LENS_ZFILE, char *lensphotoz, char *sourcephotoz, char *galsample);
 void init_cosmo_runmode(char *runmode);
@@ -16,14 +17,6 @@ void set_galaxies_source();
 void set_galaxies_lens();
 
 void set_clusters_LSST(); //set parameters for LSST/WFIRST forecasts
-
-void set_wlphotoz_LSST_Y10();
-void set_wlphotoz_LSST_Y1();
-void set_clphotoz_LSST_Y10();
-void set_clphotoz_LSST_Y1();
-
-void set_shear_priors_LSST_Y10();
-void set_shear_priors_LSST_Y1();
 
 void init_clusterMobs();
 void set_equal_tomo_bins();
@@ -54,6 +47,26 @@ int count_rows(char* filename,const char delimiter){
       p++;
     }
    return count;
+}
+
+
+void init_data_inv_bary(char *INV_FILE, char *DATA_FILE, char *BARY_FILE)
+{
+  double init;
+  printf("\n");
+  printf("---------------------------------------\n");
+  printf("Initializing data vector and covariance\n");
+  printf("---------------------------------------\n");
+
+  sprintf(like.INV_FILE,"%s",INV_FILE);
+  printf("PATH TO INVCOV: %s\n",like.INV_FILE);
+  sprintf(like.DATA_FILE,"%s",DATA_FILE);
+  printf("PATH TO DATA: %s\n",like.DATA_FILE);
+  sprintf(like.BARY_FILE,"%s",BARY_FILE);
+  printf("PATH TO BARYONS: %s\n",like.BARY_FILE);
+  init=data_read(0,1);
+  init=bary_read(0,1,1);
+  init=invcov_read(0,1,1);
 }
 
 double invcov_read(int READ, int ci, int cj)
@@ -95,6 +108,25 @@ double data_read(int READ, int ci)
   return data[ci];
 }
 
+double bary_read(int READ, int PC, int cj)
+{
+  int i,j,intspace, N_PC=6;
+  static double **bary =0;
+
+  if(READ==0 || bary == 0){
+    bary   = create_double_matrix(0, N_PC-1, 0, like.Ndata-1);      
+    FILE *F;
+    F=fopen(like.BARY_FILE,"r");
+    for (i=0;i<like.Ndata; i++){
+      fscanf(F,"%d %le %le %le %le %le %le\n",&intspace,&bary[0][i],&bary[1][i],&bary[2][i],&bary[3][i],&bary[4][i],&bary[5][i]);  
+    }
+    fclose(F);
+    printf("FINISHED READING BARYON MATRIX\n");
+  }    
+  return bary[PC][cj];
+}
+
+
 
 void init_cosmo_runmode(char *runmode)
 {
@@ -134,7 +166,6 @@ void init_binning_fourier(int Ncl, double lmin, double lmax, double lmax_shear, 
   } 
   Cluster.lbin = k;
   Cluster.l_max = lmax; //clusters go to highly nonlin as std
-  printf("%le %le %d\n",Cluster.l_min,Cluster.l_max,Cluster.lbin);
   like.lmax_kappacmb = 2999.;
   
   printf("number of ell bins Ncl: %d\n",like.Ncl);
@@ -143,26 +174,68 @@ void init_binning_fourier(int Ncl, double lmin, double lmax, double lmax_shear, 
 }
 
 
-void init_priors(char *Prior1, char *Prior2, char *Prior3, char *Prior4)
+void init_priors(double Prior1, double Prior2, double Prior3, double Prior4)
 {
+  int i;
+
   printf("\n");
   printf("---------------------------------------\n");
-  printf("Initializing priors for marginalization\n");
+  printf("Initializing observational priors for marginalization\n");
   printf("---------------------------------------\n");
   
+  for (i=0;i<tomo.shear_Nbin; i++){
+    prior.shear_calibration_m[i][0] = 0.0;
+    prior.shear_calibration_m[i][1] = Prior1;
+  }
+  like.shearcalib=1;
   
-  if(strcmp(Prior1,"LSST_Y10")==0){ 
-      set_wlphotoz_LSST_Y10();
-      set_clphotoz_LSST_Y10();
-      set_shear_priors_LSST_Y10();
+  for (i=0;i<tomo.shear_Nbin; i++){
+    nuisance.bias_zphot_shear[i]=0.0;
+    nuisance.sigma_zphot_shear[i]=Prior2; 
+    // center of Gaussian priors
+    prior.bias_zphot_shear[i][0]=nuisance.bias_zphot_shear[i];
+    prior.sigma_zphot_shear[i][0]=nuisance.sigma_zphot_shear[i]; 
+    // rms width of Gaussian priors
+    prior.bias_zphot_shear[i][1] = Prior3;
+    prior.sigma_zphot_shear[i][1]= Prior4;
   }
-  if(strcmp(Prior1,"LSST_Y1")==0){ 
-      set_wlphotoz_LSST_Y1();
-      set_clphotoz_LSST_Y1();
-      set_shear_priors_LSST_Y1();
+  like.wlphotoz=1;
+
+  for (i=0;i<tomo.clustering_Nbin; i++){
+    nuisance.bias_zphot_clustering[i]=0.0;
+    nuisance.sigma_zphot_clustering[i]=Prior2*0.6; 
+    // center of Gaussian priors
+    prior.bias_zphot_clustering[i][0]=nuisance.bias_zphot_clustering[i];
+    prior.sigma_zphot_clustering[i][0]=nuisance.sigma_zphot_clustering[i];
+    // rms width of Gaussian priors
+    prior.bias_zphot_clustering[i][1] = Prior3/2.;
+    prior.sigma_zphot_clustering[i][1]= Prior4/2.;
   }
+  like.clphotoz=1;
+
+printf("\n");
+printf("---------------------------------------\n");
+printf("Shear Calibration Prior\n");
+printf("Mean=%le, Sigma=%le\n",prior.shear_calibration_m[0][0],Prior1);
+
+printf("\n");
+printf("---------------------------------------\n");
+printf("Photo-z priors Weak Lensing\n");
+printf("Delta_z=%le, Sigma (Delta_z)=%le\n",prior.bias_zphot_shear[0][0],prior.bias_zphot_shear[0][1]);
+printf("Sigma_z=%le, Sigma (Sigma_z)=%le\n",prior.sigma_zphot_shear[0][0],prior.sigma_zphot_shear[0][1]); 
+
+printf("\n");
+printf("---------------------------------------\n");
+printf("Photo-z priors Clustering\n");
+printf("Delta_z=%le, Sigma (Delta_z)=%le\n",prior.bias_zphot_clustering[0][0],prior.bias_zphot_clustering[0][1]);
+printf("Sigma_z=%le, Sigma (Sigma_z)=%le\n",prior.sigma_zphot_clustering[0][0],prior.sigma_zphot_clustering[0][1]);
+
 }
 
+
+
+
+ 
 
 void init_survey(char *surveyname)
 {
@@ -319,22 +392,6 @@ void init_probes(char *probes)
   printf("Total number of data points like.Ndata=%d\n",like.Ndata);
 }
 
-
-void init_data_inv(char *INV_FILE, char *DATA_FILE)
-{
-  double init;
-  printf("\n");
-  printf("---------------------------------------\n");
-  printf("Initializing data vector and covariance\n");
-  printf("---------------------------------------\n");
-
-  sprintf(like.INV_FILE,"%s",INV_FILE);
-  printf("PATH TO INVCOV: %s\n",like.INV_FILE);
-  sprintf(like.DATA_FILE,"%s",DATA_FILE);
-  printf("PATH TO DATA: %s\n",like.DATA_FILE);
-  init=data_read(0,1);
-  init=invcov_read(0,1,1);
-}
 
 
 void init_lens_sample(char *lensphotoz, char *galsample)
@@ -613,122 +670,6 @@ void init_IA(char *model,char *lumfct)
   log_like_f_red();
 }
 
-
-void set_wlphotoz_LSST_Y10()
-{
-  int i;
-  printf("\n");
-  printf("Source sample: LSST opti photoz uncertainty initialized\n");
-  for (i=0;i<tomo.shear_Nbin; i++){
-    nuisance.bias_zphot_shear[i]=0.0;
-    nuisance.sigma_zphot_shear[i]=0.02; 
-    printf("nuisance.bias_zphot_shear[%d]=%le\n",i,nuisance.bias_zphot_shear[i]);
-    printf("nuisance.sigma_zphot_shear[%d]=%le\n",i,nuisance.sigma_zphot_shear[i]);
-    // center of Gaussian priors
-    prior.bias_zphot_shear[i][0]=nuisance.bias_zphot_shear[i];
-    prior.sigma_zphot_shear[i][0]=nuisance.sigma_zphot_shear[i]; 
-    // rms width of Gaussian priors
-    prior.bias_zphot_shear[i][1] = 0.001;
-    prior.sigma_zphot_shear[i][1]= 0.003;
-    printf("Mean (of mean)=%le, Sigma (of mean)=%le\n",prior.bias_zphot_shear[i][0],prior.bias_zphot_shear[i][1]);
-    printf("Mean (of sigma)=%le, Sigma (of sigma)=%le\n",prior.sigma_zphot_shear[i][0],prior.sigma_zphot_shear[i][1]); 
-  }
-  like.wlphotoz=1;
-}
-
-
-
-void set_wlphotoz_LSST_Y1()
-{
-  int i;
-  printf("\n");
-  printf("Source sample: LSST pessi photoz uncertainty initialized\n");
-  for (i=0;i<tomo.shear_Nbin; i++){
-    nuisance.bias_zphot_shear[i]=0.0;
-    nuisance.sigma_zphot_shear[i]=0.05; 
-    printf("nuisance.bias_zphot_shear[%d]=%le\n",i,nuisance.bias_zphot_shear[i]);
-    printf("nuisance.sigma_zphot_shear[%d]=%le\n",i,nuisance.sigma_zphot_shear[i]);
-    // center of Gaussian priors
-    prior.bias_zphot_shear[i][0]=nuisance.bias_zphot_shear[i];
-    prior.sigma_zphot_shear[i][0]=nuisance.sigma_zphot_shear[i]; 
-    // rms width of Gaussian priors
-    prior.bias_zphot_shear[i][1] = 0.002;
-    prior.sigma_zphot_shear[i][1]= 0.006;
-    printf("Mean (of mean)=%le, Sigma (of mean)=%le\n",prior.bias_zphot_shear[i][0],prior.bias_zphot_shear[i][1]);
-    printf("Mean (of sigma)=%le, Sigma (of sigma)=%le\n",prior.sigma_zphot_shear[i][0],prior.sigma_zphot_shear[i][1]); 
-  }
-  like.wlphotoz=1;
-}
-
-
-void set_clphotoz_LSST_Y10()
-{
-  int i;
-  printf("\n");
-  printf("Lens sample: LSST opti photoz uncertainty initialized\n");
-  for (i=0;i<tomo.clustering_Nbin; i++){
-    nuisance.bias_zphot_clustering[i]=0.0;
-    nuisance.sigma_zphot_clustering[i]=0.02; 
-    printf("nuisance.bias_zphot_clustering[%d]=%le\n",i,nuisance.bias_zphot_clustering[i]);
-    printf("nuisance.sigma_zphot_clustering[%d]=%le\n",i,nuisance.sigma_zphot_clustering[i]);
-    // center of Gaussian priors
-    prior.bias_zphot_clustering[i][0]=nuisance.bias_zphot_clustering[i];
-    prior.sigma_zphot_clustering[i][0]=nuisance.sigma_zphot_clustering[i];
-    // rms width of Gaussian priors
-    prior.bias_zphot_clustering[i][1] = 0.002;
-    prior.sigma_zphot_clustering[i][1]= 0.002;
-    printf("Mean (of mean)=%le, Sigma (of mean)=%le\n",prior.bias_zphot_clustering[i][0],prior.bias_zphot_clustering[i][1]);
-    printf("Mean (of sigma)=%le, Sigma (of sigma)=%le\n",prior.sigma_zphot_clustering[i][0],prior.sigma_zphot_clustering[i][1]); 
-  }
-  like.clphotoz=1;
-}
-
-void set_clphotoz_LSST_Y1()
-{
-  int i;
-  printf("\n");
-  printf("Lens sample: LSST pessi photoz uncertainty initialized\n");
-  for (i=0;i<tomo.clustering_Nbin; i++){
-    nuisance.bias_zphot_clustering[i]=0.0;
-    nuisance.sigma_zphot_clustering[i]=0.05; 
-    printf("nuisance.bias_zphot_clustering[%d]=%le\n",i,nuisance.bias_zphot_clustering[i]);
-    printf("nuisance.sigma_zphot_clustering[%d]=%le\n",i,nuisance.sigma_zphot_clustering[i]);
-    // center of Gaussian priors
-    prior.bias_zphot_clustering[i][0]=nuisance.bias_zphot_clustering[i];
-    prior.sigma_zphot_clustering[i][0]=nuisance.sigma_zphot_clustering[i];
-    // rms width of Gaussian priors
-    prior.bias_zphot_clustering[i][1] = 0.002;
-    prior.sigma_zphot_clustering[i][1]= 0.002;
-    printf("Mean (of mean)=%le, Sigma (of mean)=%le\n",prior.bias_zphot_clustering[i][0],prior.bias_zphot_clustering[i][1]);
-    printf("Mean (of sigma)=%le, Sigma (of sigma)=%le\n",prior.sigma_zphot_clustering[i][0],prior.sigma_zphot_clustering[i][1]); 
-  }
-  like.clphotoz=1;
-}
-
-void set_shear_priors_LSST_Y10()
-{
-  int i;
-  printf("Setting Gaussian shear calibration Priors stage 4\n");
-  for (i=0;i<tomo.shear_Nbin; i++){
-    prior.shear_calibration_m[i][0] = 0.0;
-    prior.shear_calibration_m[i][1] = 0.003;
-    printf("Mean=%le, Sigma=%le\n",prior.shear_calibration_m[i][0],prior.shear_calibration_m[i][1]);
-  }
-  like.shearcalib=1;
-}
-
-
-void set_shear_priors_LSST_Y1()
-{
-  int i;
-  printf("Setting Gaussian shear calibration Priors stage 4\n");
-  for (i=0;i<tomo.shear_Nbin; i++){
-    prior.shear_calibration_m[i][0] = 0.0;
-    prior.shear_calibration_m[i][1] = 0.013;
-    printf("Mean=%le, Sigma=%le\n",prior.shear_calibration_m[i][0],prior.shear_calibration_m[i][1]);
-  }
-  like.shearcalib=1;
-}
 
 
 
