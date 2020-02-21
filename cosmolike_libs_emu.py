@@ -238,7 +238,7 @@ class InputNuisanceParams(IterableStruct):
         ("eta_ia_highz", double),
         ("lf", double*6),
         ("m_lambda", double*6),
-        ("bary", double*2),
+        ("bary", double*3),
     ]
     @classmethod
     def fiducial(cls):
@@ -255,7 +255,7 @@ class InputNuisanceParams(IterableStruct):
         c.eta_ia_highz = 0.0
         c.lf[:] = np.repeat(0.0, 6)
         c.m_lambda[:] = [3.207, 0.993, 0.0, 0.456, 0.0, 0.0]
-        c.bary[:] = [0.0,0.0]
+        c.bary[:] = [0.0,0.0,0.0]
         return c
 
     @classmethod
@@ -273,7 +273,7 @@ class InputNuisanceParams(IterableStruct):
         c.eta_ia_highz = 0.02
         c.lf[:] = np.repeat(0.005, 6)
         c.m_lambda[:] = [0.05, 0.01, 0.01, 0.01, 0.01, 0.01]
-        c.bary[:] = [1., 1.]
+        c.bary[:] = [1., 1., 1.]
         return c
 
 
@@ -341,7 +341,7 @@ def sample_EMU_cosmology_2pt_nuisance_IA_marg(tomo_N_shear,tomo_N_lens,MG = Fals
     varied_parameters.append('beta_ia')
     varied_parameters.append('eta_ia')
     varied_parameters.append('eta_ia_highz')
-    varied_parameters += ['bary_%d'%i for i in xrange(2)]
+    varied_parameters += ['bary_%d'%i for i in xrange(3)]
     return varied_parameters
 
 
