@@ -553,7 +553,7 @@ double log_like_wrapper(input_cosmo_params ic, input_nuisance_params in)
     in.A_ia, in.beta_ia, in.eta_ia, in.eta_ia_highz,
     in.lf[0], in.lf[1], in.lf[2], in.lf[3], in.lf[4], in.lf[5], 
     in.m_lambda[0], in.m_lambda[1], in.m_lambda[2], in.m_lambda[3],
-    in.m_lambda[4], in.m_lambda[5],in.bary[0], in.bary[1]);
+    in.m_lambda[4], in.m_lambda[5],in.bary[0], in.bary[1], in.bary[2]);
   
   return like;
 }
