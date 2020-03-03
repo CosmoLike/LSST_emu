@@ -15,6 +15,8 @@ double = ctypes.c_double
 
 Double10 = double*10
 
+write_cosmolike_datavector = lib.write_datavector_wrapper
+
 initcosmo=lib.init_cosmo_runmode
 initcosmo.argtypes=[ctypes.c_char_p]
 
@@ -22,19 +24,16 @@ initbins=lib.init_binning_fourier
 initbins.argtypes=[ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int]
 
 initsurvey=lib.init_survey
-initsurvey.argtypes=[ctypes.c_char_p]
+initsurvey.argtypes=[ctypes.c_char_p,ctypes.c_double, ctypes.c_double, ctypes.c_double]
 
 initgalaxies=lib.init_galaxies
-initgalaxies.argtypes=[ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p]
-
-initclusters=lib.init_clusters
-initclusters.argtypes=[]
+initgalaxies.argtypes=[ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p]
 
 initia=lib.init_IA
 initia.argtypes=[ctypes.c_char_p,ctypes.c_char_p]
 
 initpriors=lib.init_priors
-initpriors.argtypes=[ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double]
+initpriors.argtypes=[ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,ctypes.c_double, ctypes.c_double]
 
 initprobes=lib.init_probes
 initprobes.argtypes=[ctypes.c_char_p]
@@ -243,11 +242,11 @@ class InputNuisanceParams(IterableStruct):
     @classmethod
     def fiducial(cls):
         c = cls()
-        c.bias[:] = [1.2,1.3,1.38,1.47,1.56,1.65,1.74,1.83,1.95,2.09]
+        c.bias[:] = [1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.1,2.2]
         c.source_z_bias[:] = np.repeat(0.0, 10)
-        c.source_z_s = 0.02
+        c.source_z_s = 0.01 # is being reset in main sampler routine
         c.lens_z_bias[:] = np.repeat(0.0, 10)
-        c.lens_z_s = 0.02
+        c.lens_z_s = 0.01 # is being reset in main sampler routine
         c.shear_m[:] = np.repeat(0.0, 10)
         c.A_ia = 5.92
         c.beta_ia = 1.1
@@ -261,19 +260,19 @@ class InputNuisanceParams(IterableStruct):
     @classmethod
     def fiducial_sigma(cls):
         c = cls()
-        c.bias[:] = np.repeat(0.2, 10)
+        c.bias[:] = np.repeat(0.1, 10)
         c.source_z_bias[:] = np.repeat(0.01, 10)
-        c.source_z_s = 0.005
+        c.source_z_s = 0.002 # former 0.005
         c.lens_z_bias[:] = np.repeat(0.01, 10)
-        c.lens_z_s = 0.005
+        c.lens_z_s = 0.002 # former 0.005
         c.shear_m[:] = np.repeat(0.01, 10)
-        c.A_ia = 0.1
-        c.beta_ia = 0.02
-        c.eta_ia = 0.02
-        c.eta_ia_highz = 0.02
+        c.A_ia = 1. # former 0.1
+        c.beta_ia = 0.2 # former 0.02
+        c.eta_ia = 0.4 # former 0.02
+        c.eta_ia_highz = 0.3 # former 0.02
         c.lf[:] = np.repeat(0.005, 6)
         c.m_lambda[:] = [0.05, 0.01, 0.01, 0.01, 0.01, 0.01]
-        c.bary[:] = [1., 1., 1.]
+        c.bary[:] = [3., 1., .15]
         return c
 
 
@@ -306,6 +305,8 @@ class LikelihoodFunctionWrapper(object):
         #inp.print_struct()
         #print
         like = lib.log_like_wrapper(icp, inp)
+        if like < -1.0e+14:
+            return -np.inf
         return like
 
 
@@ -328,8 +329,29 @@ def sample_cosmology_only(MG = False):
 
     return varied_parameters
 
+def sample_bias_only(tomo_N_lens):
+    varied_parameters = ['bias_%d'%i for i in xrange(tomo_N_lens)]
+    
+    return varied_parameters
 
-def sample_EMU_cosmology_2pt_nuisance_IA_marg(tomo_N_shear,tomo_N_lens,MG = False):
+def sample_cosmology_2pt_bias(tomo_N_lens,MG = False):
+    varied_parameters = sample_cosmology_only(MG)
+    varied_parameters += ['bias_%d'%i for i in xrange(tomo_N_lens)]
+    
+    return varied_parameters
+
+def sample_cosmology_2pt_nuisance(tomo_N_shear,tomo_N_lens,MG = False):
+    varied_parameters = sample_cosmology_only(MG)
+    varied_parameters += ['bias_%d'%i for i in xrange(tomo_N_lens)]
+    varied_parameters += ['source_z_bias_%d'%i for i in xrange(tomo_N_shear)]
+    varied_parameters.append('source_z_s')
+    varied_parameters += ['lens_z_bias_%d'%i for i in xrange(tomo_N_lens)]
+    varied_parameters.append('lens_z_s')
+    varied_parameters += ['shear_m_%d'%i for i in xrange(tomo_N_shear)]
+    return varied_parameters
+
+
+def sample_cosmology_2pt_nuisance_IA_bary_marg(tomo_N_shear,tomo_N_lens,MG = False):
     varied_parameters = sample_cosmology_only(MG)
     varied_parameters += ['bias_%d'%i for i in xrange(tomo_N_lens)]
     varied_parameters += ['source_z_bias_%d'%i for i in xrange(tomo_N_shear)]

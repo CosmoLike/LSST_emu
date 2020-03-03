@@ -1,51 +1,43 @@
-class:
-	cd ../cosmolike_core/class; $(MAKE)
+cfastcov_dir := cfastcov/
+cfastcov := $(cfastcov_dir)twobessel.c $(cfastcov_dir)utils.c $(cfastcov_dir)utils_complex.c
+opt_home := -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/usr/local/include -L/usr/local/lib -lgsl -lfftw3 -lgslcblas -lm -g -O3 -std=gnu99 -ffast-math -funroll-loops -L../cosmolike_core/class -lclass
+opt_ocelote := -std=c99 -Wno-missing-braces -Wno-missing-field-initializers \
+-I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib \
+-lfftw3 -lgsl -lgslcblas -lm -g -O3 \
+-ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
+cfftlog_dir := ../cosmolike_core/cfftlog/
+cfftlog := $(cfftlog_dir)cfftlog.c $(cfftlog_dir)utils.c $(cfftlog_dir)utils_complex.c
 
 
 home: 
-	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/usr/local/include -L/usr/local/lib -shared -o like_fourier.so -fPIC like_fourier.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/usr/local/include -L/usr/local/lib -o like_fourier like_fourier.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/usr/local/include -L/usr/local/lib -o ./compute_covariances_fourier compute_covariances_fourier.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
+	make home_shared
+	make home_datav
+	make home_cov
 
-	
+home_datav:
+	gcc like_fourier.c -o ./like_fourier $(opt_home)
+
+home_cov:
+	gcc compute_covariances_fourier.c -o ./compute_covariances_fourier $(opt_home)
+
+home_shared:
+	gcc -shared -o like_fourier.so -fPIC like_fourier.c $(opt_home)
+
 ocelote:
-	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o like_fourier like_fourier.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -shared -o like_fourier.so -fPIC like_fourier.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
+	make ocelote_shared 
+	make ocelote_datav
+	make ocelote_cov
 
-	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier_SRD compute_covariances_fourier_SRD.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
+ocelote_datav:
+	gcc like_fourier.c -o ./like_fourier $(opt_ocelote)
 
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier compute_covariances_fourier.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
+ocelote_cov:
+	gcc compute_covariances_fourier.c -o ./compute_covariances_fourier $(opt_ocelote)
 
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier2 compute_covariances_fourier2.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
+ocelote_shared:
+	gcc -shared -o like_fourier.so -fPIC like_fourier.c $(opt_ocelote)
 
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier3 compute_covariances_fourier3.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier4 compute_covariances_fourier4.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier5 compute_covariances_fourier5.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier6 compute_covariances_fourier6.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier7 compute_covariances_fourier7.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier8 compute_covariances_fourier8.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier9 compute_covariances_fourier9.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier10 compute_covariances_fourier10.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier11 compute_covariances_fourier11.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier12 compute_covariances_fourier12.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier13 compute_covariances_fourier13.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier14 compute_covariances_fourier14.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier15 compute_covariances_fourier15.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier16 compute_covariances_fourier16.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
-
-# 	gcc -std=c99 -Wno-missing-braces -Wno-missing-field-initializers -I/cm/shared/uaapps/gsl/2.1/include -L/cm/shared/uaapps/gsl/2.1/lib -o ./compute_covariances_fourier17 compute_covariances_fourier17.c -lfftw3 -lgsl -lgslcblas -lm -O0 -g -O3 -ffast-math -funroll-loops -std=gnu99 -L../cosmolike_core/class -lclass
+class:
+	cd ../cosmolike_core/class; $(MAKE)
 
 
