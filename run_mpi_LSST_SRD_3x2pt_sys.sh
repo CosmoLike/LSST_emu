@@ -7,8 +7,8 @@
 ### mem=168gb is memory per node, pcmem=6gb is the memory per core - optional
 #PBS -l select=20:ncpus=28:mem=168GB
 #PBS -l place=free:shared
-#PBS -l cput=5600:00:00
-#PBS -l walltime=8:00:00
+#PBS -l cput=11200:00:00
+#PBS -l walltime=20:00:00
 #PBS -N W1st_mpi
 #PBS -e /home/u17/timeifler/output/
 #PBS -o /home/u17/timeifler/output/

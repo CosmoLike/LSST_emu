@@ -209,13 +209,13 @@ class InputCosmologyParams(IterableStruct):
     @classmethod
     def fiducial_sigma(cls):
         c = cls()
-        c.omega_m = 0.01
-        c.sigma_8 = 0.01
-        c.n_s = 0.01
-        c.w0 = .02
-        c.wa = 0.02
+        c.omega_m = 0.05 # before 0.01
+        c.sigma_8 = 0.05 # before 0.01
+        c.n_s = 0.02 # before 0.01
+        c.w0 = 0.2 # before 0.02
+        c.wa = 0.3 # before 0.02
         c.omega_b = 0.001
-        c.h0 = 0.01
+        c.h0 = 0.05 # before 0.01
         c.MGSigma = 0.1
         c.MGmu = 0.1     
         return c
@@ -260,19 +260,19 @@ class InputNuisanceParams(IterableStruct):
     @classmethod
     def fiducial_sigma(cls):
         c = cls()
-        c.bias[:] = np.repeat(0.1, 10)
+        c.bias[:] = np.repeat(0.2, 10)
         c.source_z_bias[:] = np.repeat(0.01, 10)
-        c.source_z_s = 0.002 # former 0.005
+        c.source_z_s = 0.005 # former 0.005
         c.lens_z_bias[:] = np.repeat(0.01, 10)
-        c.lens_z_s = 0.002 # former 0.005
+        c.lens_z_s = 0.005 # former 0.005
         c.shear_m[:] = np.repeat(0.01, 10)
-        c.A_ia = 1. # former 0.1
-        c.beta_ia = 0.2 # former 0.02
-        c.eta_ia = 0.4 # former 0.02
-        c.eta_ia_highz = 0.3 # former 0.02
+        c.A_ia = 1. # former 1.
+        c.beta_ia = 0.4 # former 0.2
+        c.eta_ia = 0.6 # former 0.4
+        c.eta_ia_highz = 0.3 # former 0.2
         c.lf[:] = np.repeat(0.005, 6)
         c.m_lambda[:] = [0.05, 0.01, 0.01, 0.01, 0.01, 0.01]
-        c.bary[:] = [3., 1., .15]
+        c.bary[:] = [10., 4., .6] # former 3,1,0.15
         return c
 
 
@@ -369,7 +369,7 @@ def sample_cosmology_2pt_nuisance_IA_bary_marg(tomo_N_shear,tomo_N_lens,MG = Fal
 
 
 
-def sample_main(varied_parameters, sigma_z, iterations, nwalker, nthreads, filename, blind=False, pool=None):
+def sample_main(varied_parameters, sigma_z,sigma_sigma_z, iterations, nwalker, nthreads, filename, blind=False, pool=None):
     print varied_parameters
 
     likelihood = LikelihoodFunctionWrapper(varied_parameters)
@@ -383,7 +383,10 @@ def sample_main(varied_parameters, sigma_z, iterations, nwalker, nthreads, filen
     #starting_point += InputCosmologyParams.fiducial().convert_to_vector_filter(varied_parameters)
 
     std = InputCosmologyParams.fiducial_sigma().convert_to_vector_filter(varied_parameters)
-    std += InputNuisanceParams().fiducial_sigma().convert_to_vector_filter(varied_parameters)
+    new2=InputNuisanceParams().fiducial_sigma()
+    setattr(new2,'source_z_s',sigma_z/5.)
+    setattr(new2,'lens_z_s',sigma_z*0.6/5.)
+    std += new2.convert_to_vector_filter(varied_parameters)
 
     p0 = emcee.utils.sample_ball(starting_point, std, size=nwalker)
 

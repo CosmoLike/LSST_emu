@@ -192,24 +192,14 @@ int set_cosmology_params(double OMM, double S8, double NS, double W0,double WA, 
   cosmology.MGSigma=MGSigma;
   cosmology.MGmu=MGmu;
 
-  if (cosmology.Omega_m < 0.05 || cosmology.Omega_m > 0.6) return 0;
+  if (cosmology.Omega_m < 0.04 || cosmology.Omega_m > 0.7) return 0;
   if (cosmology.omb < 0.04 || cosmology.omb > 0.055) return 0;
-  if (cosmology.sigma_8 < 0.5 || cosmology.sigma_8 > 1.1) return 0;
+  if (cosmology.sigma_8 < 0.4 || cosmology.sigma_8 > 1.2) return 0;
   if (cosmology.n_spec < 0.84 || cosmology.n_spec > 1.06) return 0;
   if (cosmology.w0 < -2.1 || cosmology.w0 > -0.0) return 0;
   if (cosmology.wa < -2.6 || cosmology.wa > 2.6) return 0;
   if (cosmology.h0 < 0.4 || cosmology.h0 > 0.9) return 0;
-  //CH BEGINS 
-  //CH: to use for running planck15_BA0_w0_wa prior alone) 
-  //printf("like_fourier.c from WFIRST_forecasts: cosmology bounds set for running with planck15_BA0_w0_wa prior\n");
-  //if (cosmology.Omega_m < 0.05 || cosmology.Omega_m > 0.6) return 0; 
-  //if (cosmology.omb < 0.01 || cosmology.omb > 0.1) return 0; 
-  //if (cosmology.sigma_8 < 0.5 || cosmology.sigma_8 > 1.1) return 0; 
-  //if (cosmology.n_spec < 0.84 || cosmology.n_spec > 1.06) return 0; 
-  //if (cosmology.w0 < -2.1 || cosmology.w0 > 1.5) return 0; 
-  //if (cosmology.wa < -5.0 || cosmology.wa > 2.6) return 0; 
-  //if (cosmology.h0 < 0.3 || cosmology.h0 > 0.9) return 0; 
-  //CH ENDS
+  
   return 1;
 }
 
@@ -243,7 +233,7 @@ int set_nuisance_shear_photoz(double SP1,double SP2,double SP3,double SP4,double
   
   for (i=0;i<tomo.shear_Nbin; i++){ 
     nuisance.sigma_zphot_shear[i]=SPS1;
-    if (nuisance.sigma_zphot_shear[i]<0.0001) return 0;
+    if (nuisance.sigma_zphot_shear[i]<0.000001) return 0;
   }
   return 1;
 }

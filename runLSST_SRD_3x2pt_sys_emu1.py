@@ -37,11 +37,11 @@ tomo_binning_lens=['LSST_gold']
 model=0 
 file_source_z = os.path.join(dirname, "zdistris/",source_z[model])
 file_lens_z = os.path.join(dirname, "zdistris/",lens_z[model])
-data_file = os.path.join(dirname, "datav/",data[model])
-#cov_file = os.path.join(dirname, "inv/",inv[model])
-cov_file = os.path.join("/Users/timeifler/Dropbox/cosmolike_store/LSST_emu/inv/",inv[model])
-chain_file = os.path.join(dirname, "chains/like_LSST_3x2pt_sys_model_%d" %model)
-#chain_file = os.path.join(dirname, "/extra/timeifler/LSST_emu/chains/LSST_3x2pt_sys_model_%d" %model)
+data_file = os.path.join(dirname, "datav/",data[model]) 
+cov_file = os.path.join(dirname, "inv/",inv[model])
+#cov_file = os.path.join("/Users/timeifler/Dropbox/cosmolike_store/LSST_emu/inv/",inv[model])
+#chain_file = os.path.join(dirname, "chains/like_LSST_3x2pt_sys_model_%d" %model)
+chain_file = os.path.join(dirname, "/extra/timeifler/LSST_emu/chains/LSST_3x2pt_sys_model_%d" %model)
 bary_file=os.path.join(dirname, "baryons/",bary[model])
 
 initcosmo("halofit")
@@ -66,5 +66,5 @@ initdatainv(cov_file ,data_file, bary_file)
 sample_params = sample_cosmology_2pt_nuisance_IA_bary_marg(get_N_tomo_shear(),get_N_tomo_clustering())
 #sample_params = sample_cosmology_2pt_cluster_nuisance(get_N_tomo_shear(),get_N_tomo_clustering()) 
 
-sample_main(sample_params,sigma_z[model],2000,560,1,chain_file, blind=False, pool=MPIPool())
+sample_main(sample_params,sigma_z[model],sigma_z_prior[model],5000,1120,1,chain_file, blind=False, pool=MPIPool())
 
