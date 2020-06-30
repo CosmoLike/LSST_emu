@@ -1,0 +1,29 @@
+function addvar () {
+    local tmp="${!1}" ;
+    tmp="${tmp//:${2}:/:}" ;
+    tmp="${tmp/#${2}:/}" ;
+    tmp="${tmp/%:${2}/}" ;
+    export $1="${2}:${tmp}" ;
+}
+
+export ROOTDIR=$PWD
+export MAKE_NUM_THREADS=5
+export FORTRAN_COMPILER=gfortran
+export C_COMPILER=gcc
+export CXX_COMPILER=g++
+
+addvar LD_LIBRARY_PATH $ROOTDIR/lib
+
+module unload gcc/8.2
+module unload gcc/6.2
+module unload python/2.7.15
+module unload boost/1.62
+module unload pkgsrc/2018Q3
+module unload mpi-sgi/mpt
+module unload python3/3.7.0
+module unload python/2.7.15
+
+module load gcc/8.2
+module load mpi-sgi/mpt
+module load python/2.7.15
+module load pkgsrc/2018Q3
