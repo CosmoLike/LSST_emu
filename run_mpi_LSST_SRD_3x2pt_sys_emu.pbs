@@ -2,7 +2,7 @@
 #PBS -lselect=40:ncpus=20:model=ivy
 #PBS -N EMCMC
 #PBS -W group_list=s1733
-#PBS -l walltime=50:00:00
+#PBS -l walltime=25:00:00
 
 echo ------------------------------------------------------
 echo -n 'Job is running on node '; cat $PBS_NODEFILE
