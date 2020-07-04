@@ -26,6 +26,7 @@ fnames = []
 with open(fnames_list) as fp:
     for line in fp.readlines():
         if line[0]!='#':
+            line = line.strip()
             fnames.append(line)
 Nchains = len(fnames)
 print("number of chains: ",Nchains)

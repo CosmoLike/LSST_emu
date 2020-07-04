@@ -423,6 +423,7 @@ def sample_main(varied_parameters, sigma_z,sigma_sigma_z, iterations, nwalker, n
         f.flush()
     f.close()
     
+    pool.close()
 
     # for (p, loglike, state) in sampler.sample(p0,iterations=iterations):
     #     for row in p:
